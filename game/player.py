@@ -2,11 +2,14 @@ import pygame as pg
 import math
 import os
 
+from game.bullet import Bullet
+
 red = (255, 0, 0)
 img_path = "resources/sprites/swat.png"
 
-class Player:
+class Player(pg.sprite.Sprite):
     def __init__(self):
+        super().__init__()
         raw_image = pg.image.load(img_path).convert_alpha()
 
         # Rescaling imagine - ! mai trb sa vedem aici cum se potriveste cel mai bine scaling_factor
@@ -22,19 +25,26 @@ class Player:
 
         self.correction_angle = 90 # directia player
         self.velocity = 5
+        self.angle = 0
+
+        self.shoot = False
+        self.cooldown = 0
 
     def update(self):
         """Ii da update caracterului cu toate functionalitatile"""
         self.movement()
         self.rotate()
 
+        if self.cooldown > 0:
+            self.cooldown -= 1
+
     def rotate(self):
         """Roteste caracterul dupa pozitia cursorului"""
         mx, my = pg.mouse.get_pos()
         dx, dy = mx - self.rect.centerx, my - self.rect.centery
-        angle = math.degrees(math.atan2(-dy, dx)) - self.correction_angle
+        self.angle = math.degrees(math.atan2(-dy, dx)) - self.correction_angle
 
-        self.image = pg.transform.rotate(self.original_image, angle)
+        self.image = pg.transform.rotate(self.original_image, self.angle)
 
         old_center = self.rect.center
         self.rect = self.image.get_rect()
@@ -55,3 +65,14 @@ class Player:
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)
+
+    def is_shooting(self):
+        if self.cooldown == 0:
+            self.cooldown = 20
+            
+            offset = pg.math.Vector2(20, -5)
+            rotated_offset = offset.rotate(-self.angle)
+            bullet_start_pos = self.rect.center + rotated_offset
+            
+            return Bullet(bullet_start_pos.x, bullet_start_pos.y, self.angle)   
+        return None 
