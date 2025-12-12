@@ -16,15 +16,16 @@ class Bullet(pg.sprite.Sprite):
         self.x_velocity=math.cos(self.angle * (2*math.pi/360)) * self.speed
         self.y_velocity=-math.sin(self.angle * (2*math.pi/360)) * self.speed
 
-    def movement(self):
+    def movement(self, walls):
         self.x += self.x_velocity
         self.y += self.y_velocity
 
         self.rect.x = int(self.x)
         self.rect.y = int(self.y)
+        for wall in walls:
+            if self.rect.colliderect(wall): # trece prin 2 colturi de wall (?)
+                self.kill()
 
-    def update(self):
-        self.movement()
-        # Daca glontul iese de pe ecran il distrugem
-        if self.rect.x < 0 or self.rect.x > 1280 or self.rect.y < 0 or self.rect.y > 720:
-            self.kill()
+    def update(self, walls):
+        self.movement(walls)
+        # trb adaugata iarba ca border sa nu poata iesi din scena si sa se distruga bulleturile in ea

@@ -1,3 +1,4 @@
+
 import pygame as pg
 import math
 import os
@@ -23,6 +24,11 @@ class Player(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (1280//2, 720//2)
 
+        # hitbox nou mai mic decat imaginea
+        # mai usor sa intre pe usa
+        self.hitbox = pg.Rect(0, 0, 35, 35)
+        self.hitbox.center = self.rect.center
+
         self.correction_angle = 90 # directia player
         self.velocity = 5
         self.angle = 0
@@ -30,37 +36,54 @@ class Player(pg.sprite.Sprite):
         self.shoot = False
         self.cooldown = 0
 
-    def update(self):
+    def update(self, walls):
         """Ii da update caracterului cu toate functionalitatile"""
-        self.movement()
+        self.movement(walls)
         self.rotate()
 
         if self.cooldown > 0:
             self.cooldown -= 1
 
     def rotate(self):
-        """Roteste caracterul dupa pozitia cursorului"""
         mx, my = pg.mouse.get_pos()
-        dx, dy = mx - self.rect.centerx, my - self.rect.centery
-        self.angle = math.degrees(math.atan2(-dy, dx)) - self.correction_angle
 
+        screen_center_x = 1280 // 2
+        screen_center_y = 720 // 2
+
+        dx = mx - screen_center_x
+        dy = my - screen_center_y
+
+        self.angle = math.degrees(math.atan2(-dy, dx)) - self.correction_angle
         self.image = pg.transform.rotate(self.original_image, self.angle)
 
-        old_center = self.rect.center
         self.rect = self.image.get_rect()
-        self.rect.center = old_center
+        self.rect.center = self.hitbox.center
 
-    def movement(self):
+    def movement(self, walls):
         keys = pg.key.get_pressed()
 
         if keys[pg.K_w]:
-            self.rect.y -= self.velocity
+            self.hitbox.y -= self.velocity
+            for wall in walls:
+                if self.hitbox.colliderect(wall):
+                    self.hitbox.top = wall.bottom
         if keys[pg.K_s]:
-            self.rect.y += self.velocity
+            self.hitbox.y += self.velocity
+            for wall in walls:
+                if self.hitbox.colliderect(wall):
+                    self.hitbox.bottom = wall.top
         if keys[pg.K_a]:
-            self.rect.x -= self.velocity
+            self.hitbox.x -= self.velocity
+            for wall in walls:
+                if self.hitbox.colliderect(wall):
+                    self.hitbox.left = wall.right
         if keys[pg.K_d]:
-            self.rect.x += self.velocity
+            self.hitbox.x += self.velocity
+            for wall in walls:
+                if self.hitbox.colliderect(wall):
+                    self.hitbox.right = wall.left
+
+        self.rect.center = self.hitbox.center
 
 
     def draw(self, screen):
