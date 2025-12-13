@@ -1,5 +1,6 @@
 import pygame as pg
 from pygame.surface import Surface
+import json
 
 walls_path = "resources/tiles/walls"
 walls_img = {
@@ -27,6 +28,15 @@ class Editor:
         self.walls = {}
         self.scroll = [0, 0]
         self.camera_speed = 10
+        self.save_path = "level_data.json"
+        self.enemies = set()
+        self.mode = "walls"
+        self.font = pg.font.SysFont(None, 30)
+        
+        # De inlocuit cu sprite ul
+        enemy_surf = pg.Surface((self.cell_size, self.cell_size))
+        enemy_surf.fill((255, 0, 0))
+        enemy_surf.set_alpha(150)
 
         self.assets = {
             "all": pg.image.load(walls_img["all"]).convert_alpha(),
@@ -45,6 +55,7 @@ class Editor:
             "top-left-bottom": pg.image.load(walls_img["top-left-bottom"]).convert_alpha(),
             "top-left-right": pg.image.load(walls_img["top-left-right"]).convert_alpha(),
             "top-bottom": pg.image.load(walls_img["top-bottom"]).convert_alpha(),
+            "enemy": enemy_surf
         }
 
     def update(self, screen):
@@ -52,6 +63,7 @@ class Editor:
         self.make_grid(screen)
         self.edit()
         self.draw(screen, self.scroll)
+        self.draw_ui(screen)
 
     def move_camera(self):
         keys = pg.key.get_pressed()
@@ -138,17 +150,29 @@ class Editor:
         y_pos = row_index * self.cell_size
 
         pos_key = (x_pos, y_pos)
-        if has_click[0]:
-            if pos_key not in self.walls:
-                self.walls[pos_key] = self.assets["center"]
-                self.update_neighbours(pos_key)
 
-        elif has_click[2]:
-            if pos_key in self.walls:
-                del self.walls[pos_key]
-                self.update_neighbours(pos_key)
+        if self.mode=="wall":
+            if has_click[0]:
+                if pos_key not in self.walls:
+                    self.walls[pos_key] = self.assets["center"]
+                    self.update_neighbours(pos_key)
 
-    def draw(self, screen, offset=(0, 0)):
+            elif has_click[2]:
+                if pos_key in self.walls:
+                    del self.walls[pos_key]
+                    self.update_neighbours(pos_key)
+
+        elif self.mode=="enemy":
+            if has_click[0]:
+                if pos_key not in self.enemies and pos_key not in self.walls:
+                    self.enemies.add(pos_key)
+
+            elif has_click[2]:
+                if pos_key in self.enemies:
+                    self.enemies.remove(pos_key)
+        
+
+    def draw(self, screen, offset=(0, 0), show_enemies=True):
         for pos, asset in self.walls.items():
             screen_pos_x = pos[0] - offset[0]
             screen_pos_y = pos[1] - offset[1]
@@ -156,6 +180,15 @@ class Editor:
             if -self.cell_size < screen_pos_x < screen.get_width() and \
                -self.cell_size < screen_pos_y < screen.get_height():
                 screen.blit(asset, (screen_pos_x, screen_pos_y))
+                
+        if show_enemies:
+            for pos in self.enemies:
+                screen_pos_x = pos[0] - offset[0]
+                screen_pos_y = pos[1] - offset[1]
+
+                if -self.cell_size < screen_pos_x < screen.get_width() and \
+                -self.cell_size < screen_pos_y < screen.get_height():
+                    screen.blit(self.assets["enemy"], (screen_pos_x, screen_pos_y))
 
     def make_grid(self, screen):
         height = screen.get_height()
@@ -174,3 +207,48 @@ class Editor:
             pg.draw.line(grid_surface, color_line, (x, 0), (x, height), 1)
 
         screen.blit(grid_surface, (0, 0))
+
+    def save_level(self):
+        
+        data = {
+            "walls": list(self.walls.keys()),
+            "enemies": list(self.enemies)
+        }
+        with open(self.save_path, "w") as f:
+            json.dump(data, f)
+        print(f"Map saved in {self.save_path}!")
+
+    def load_level(self):
+        try:
+            with open(self.save_path, "r") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            print("No saved data found.")
+            return []
+
+        self.walls = {}
+        self.enemies = set()
+
+        walls_list = data.get("walls", [])
+        enemies_list = data.get("enemies", [])
+
+        for pos in walls_list:
+            self.walls[tuple(pos)] = self.assets["center"]
+            
+        for pos in enemies_list:
+            self.enemies.add(tuple(pos))
+        for pos in list(self.walls.keys()):
+            self.update_wall(pos)
+
+        print("Map loaded succesfully.")
+        return list(self.enemies)
+
+    def draw_ui(self, screen):
+        text_wall = self.font.render("1 - Wall", True, (255, 255, 0))
+        text_enemy = self.font.render("2 - Enemy", True, (255, 255, 0))
+        
+        screen.blit(text_wall, (10, 10)) 
+        screen.blit(text_enemy, (10, 40))
+
+        mode_text = self.font.render(f"Mode: {self.mode.upper()}", True, (255, 255, 255))
+        screen.blit(mode_text, (10, 70))

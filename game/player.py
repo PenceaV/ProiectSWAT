@@ -24,6 +24,9 @@ class Player(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (1280//2, 720//2)
 
+        self.start_pos = (self.rect.centerx, self.rect.centery)
+        self.pos = pg.math.Vector2(self.rect.center)
+
         # hitbox nou mai mic decat imaginea
         # mai usor sa intre pe usa
         self.hitbox = pg.Rect(0, 0, 35, 35)
@@ -35,6 +38,7 @@ class Player(pg.sprite.Sprite):
 
         self.shoot = False
         self.cooldown = 0
+        self.health = 5
 
     def update(self, walls):
         """Ii da update caracterului cu toate functionalitatile"""
@@ -84,6 +88,7 @@ class Player(pg.sprite.Sprite):
                     self.hitbox.right = wall.left
 
         self.rect.center = self.hitbox.center
+        self.pos = pg.math.Vector2(self.hitbox.center)
 
 
     def draw(self, screen):

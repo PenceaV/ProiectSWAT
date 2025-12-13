@@ -12,7 +12,7 @@ class Bullet(pg.sprite.Sprite):
         self.y=y
         self.angle=angle+90  # ajustam pentru correction_angle
 
-        self.speed=50
+        self.speed=25
         self.x_velocity=math.cos(self.angle * (2*math.pi/360)) * self.speed
         self.y_velocity=-math.sin(self.angle * (2*math.pi/360)) * self.speed
 
