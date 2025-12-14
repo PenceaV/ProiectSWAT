@@ -22,10 +22,18 @@ walls_img = {
     "top-bottom": f"{walls_path}/top-bottom.png"
 }
 
+
+grass_img = "resources/tiles/grass.png"
+grass_sprite = pg.image.load(grass_img)
+grass_sprite = pg.transform.scale(grass_sprite, (40, 40))
+
 class Editor:
     def __init__(self):
         self.cell_size = 40
         self.walls = {}
+        self.grass = {}
+        self.floors = {}
+        self.trees = {}
         self.scroll = [0, 0]
         self.camera_speed = 10
         self.save_path = "level_data.json"
@@ -34,9 +42,14 @@ class Editor:
         self.font = pg.font.SysFont(None, 30)
         
         # De inlocuit cu sprite ul
-        enemy_surf = pg.Surface((self.cell_size, self.cell_size))
+        enemy_surf = pg.image.load("resources/sprites/taliban.png").convert_alpha()
         enemy_surf.fill((255, 0, 0))
         enemy_surf.set_alpha(150)
+
+        floors_img = {
+            "floor1": pg.image.load("resources/tiles/floors/floor1.png").convert_alpha(),
+            "floor2": pg.image.load("resources/tiles/floors/floor2.png").convert_alpha()
+        }
 
         self.assets = {
             "all": pg.image.load(walls_img["all"]).convert_alpha(),
@@ -55,14 +68,20 @@ class Editor:
             "top-left-bottom": pg.image.load(walls_img["top-left-bottom"]).convert_alpha(),
             "top-left-right": pg.image.load(walls_img["top-left-right"]).convert_alpha(),
             "top-bottom": pg.image.load(walls_img["top-bottom"]).convert_alpha(),
-            "enemy": enemy_surf
+            "enemy": enemy_surf,
+            "grass": grass_sprite.convert_alpha(),
+            "floor1": pg.transform.scale(floors_img["floor1"], (40, 40)),
+            "floor2": pg.transform.scale(floors_img["floor2"], (40, 40)),
+            "tree": pg.image.load("resources/tiles/tree.png").convert_alpha()
         }
 
     def update(self, screen):
         self.move_camera()
         self.make_grid(screen)
         self.edit()
-        self.draw(screen, self.scroll)
+        self.draw_floors(screen, self.scroll)
+        self.draw_walls(screen, self.scroll)
+        self.draw_enemies(screen, self.scroll)
         self.draw_ui(screen)
 
     def move_camera(self):
@@ -162,6 +181,38 @@ class Editor:
                     del self.walls[pos_key]
                     self.update_neighbours(pos_key)
 
+        elif self.mode == "tree":
+            if has_click[0]:
+                if pos_key not in self.trees:
+                    self.trees[pos_key] = self.assets["tree"]
+            elif has_click[2]:
+                if pos_key in self.trees:
+                    del self.trees[pos_key]
+
+        elif self.mode == "floor1":
+            if has_click[0]:
+                if pos_key not in self.grass:
+                    self.floors[pos_key] = self.assets["floor1"]
+            elif has_click[2]:
+                if pos_key in self.floors:
+                    del self.floors[pos_key]
+
+        elif self.mode == "floor2":
+            if has_click[0]:
+                if pos_key not in self.grass:
+                    self.floors[pos_key] = self.assets["floor2"]
+            elif has_click[2]:
+                if pos_key in self.floors:
+                    del self.floors[pos_key]
+
+        elif self.mode == "grass":
+            if has_click[0]:
+                if pos_key not in self.grass:
+                    self.grass[pos_key] = self.assets["grass"]
+            elif has_click[2]:
+                if pos_key in self.grass:
+                    del self.grass[pos_key]
+
         elif self.mode=="enemy":
             if has_click[0]:
                 if pos_key not in self.enemies and pos_key not in self.walls:
@@ -170,25 +221,41 @@ class Editor:
             elif has_click[2]:
                 if pos_key in self.enemies:
                     self.enemies.remove(pos_key)
-        
 
-    def draw(self, screen, offset=(0, 0), show_enemies=True):
+    def draw_floors(self, screen, offset=(0, 0)):
+        for pos, asset in self.grass.items():
+            screen_pos_x = pos[0] - offset[0]
+            screen_pos_y = pos[1] - offset[1]
+            if -self.cell_size < screen_pos_x < screen.get_width() and -self.cell_size < screen_pos_y < screen.get_height():
+                screen.blit(asset, (screen_pos_x, screen_pos_y))
+
+        for pos, asset in self.floors.items():
+            screen_pos_x = pos[0] - offset[0]
+            screen_pos_y = pos[1] - offset[1]
+            if -self.cell_size < screen_pos_x < screen.get_width() and -self.cell_size < screen_pos_y < screen.get_height():
+                screen.blit(asset, (screen_pos_x, screen_pos_y))
+
+        for pos, asset in self.trees.items():
+            screen_pos_x = pos[0] - offset[0]
+            screen_pos_y = pos[1] - offset[1]
+            if -self.cell_size < screen_pos_x < screen.get_width() and -self.cell_size < screen_pos_y < screen.get_height():
+                screen.blit(asset, (screen_pos_x, screen_pos_y))
+
+    def draw_walls(self, screen, offset=(0, 0)):
         for pos, asset in self.walls.items():
             screen_pos_x = pos[0] - offset[0]
             screen_pos_y = pos[1] - offset[1]
-
-            if -self.cell_size < screen_pos_x < screen.get_width() and \
-               -self.cell_size < screen_pos_y < screen.get_height():
+            if -self.cell_size < screen_pos_x < screen.get_width() and -self.cell_size < screen_pos_y < screen.get_height():
                 screen.blit(asset, (screen_pos_x, screen_pos_y))
-                
-        if show_enemies:
-            for pos in self.enemies:
-                screen_pos_x = pos[0] - offset[0]
-                screen_pos_y = pos[1] - offset[1]
 
-                if -self.cell_size < screen_pos_x < screen.get_width() and \
-                -self.cell_size < screen_pos_y < screen.get_height():
-                    screen.blit(self.assets["enemy"], (screen_pos_x, screen_pos_y))
+
+
+    def draw_enemies(self, screen, offset=(0, 0)):
+        for pos in self.enemies:
+            screen_pos_x = pos[0] - offset[0]
+            screen_pos_y = pos[1] - offset[1]
+            if -self.cell_size < screen_pos_x < screen.get_width() and -self.cell_size < screen_pos_y < screen.get_height():
+                screen.blit(self.assets["enemy"], (screen_pos_x, screen_pos_y))
 
     def make_grid(self, screen):
         height = screen.get_height()
@@ -209,11 +276,28 @@ class Editor:
         screen.blit(grid_surface, (0, 0))
 
     def save_level(self):
-        
+        floors = []
+        for pos, asset in self.floors.items():
+            floor_type = "floor1"  # default
+
+            if asset == self.assets["floor1"]:
+                floor_type = "floor1"
+            elif asset == self.assets["floor2"]:
+                floor_type = "floor2"
+
+            floors.append({
+                "pos": list(pos),
+                "type": floor_type
+            })
+
         data = {
+            "grass": list(self.grass.keys()),
+            "floors": floors,
             "walls": list(self.walls.keys()),
-            "enemies": list(self.enemies)
+            "enemies": list(self.enemies),
+            "trees": list(self.trees)
         }
+
         with open(self.save_path, "w") as f:
             json.dump(data, f)
         print(f"Map saved in {self.save_path}!")
@@ -226,17 +310,43 @@ class Editor:
             print("No saved data found.")
             return []
 
+        self.grass = {}
+        self.floors = {}
         self.walls = {}
         self.enemies = set()
 
+        grass_list = data.get("grass", [])
         walls_list = data.get("walls", [])
         enemies_list = data.get("enemies", [])
+        trees_list = data.get("trees", [])
+        floors_list = data.get("floors", [])
 
         for pos in walls_list:
             self.walls[tuple(pos)] = self.assets["center"]
-            
+
+        for pos in trees_list:
+            self.trees[tuple(pos)] = self.assets["tree"]
+
+        for pos in grass_list:
+            self.grass[tuple(pos)] = self.assets["grass"]
+
+        for item in floors_list:
+
+            if isinstance(item, list):
+
+                self.floors[tuple(item)] = self.assets["floor1"]
+            elif isinstance(item, dict):
+                pos = tuple(item["pos"])
+                floor_type = item["type"]
+
+                if floor_type in self.assets:
+                    self.floors[pos] = self.assets[floor_type]
+                else:
+                    self.floors[pos] = self.assets["floor1"]
+
         for pos in enemies_list:
             self.enemies.add(tuple(pos))
+
         for pos in list(self.walls.keys()):
             self.update_wall(pos)
 
@@ -246,9 +356,17 @@ class Editor:
     def draw_ui(self, screen):
         text_wall = self.font.render("1 - Wall", True, (255, 255, 0))
         text_enemy = self.font.render("2 - Enemy", True, (255, 255, 0))
+        text_grass = self.font.render("3 - Grass", True, (255, 255, 0))
+        text_floor1 = self.font.render("4 - Floor1", True, (255, 255, 0))
+        text_floor2 = self.font.render("5 - Floor2", True, (255, 255, 0))
+        text_tree = self.font.render("6 - Tree", True, (255, 255, 0))
         
-        screen.blit(text_wall, (10, 10)) 
-        screen.blit(text_enemy, (10, 40))
+        screen.blit(text_wall, (30, 10))
+        screen.blit(text_enemy, (30, 40))
+        screen.blit(text_grass, (30, 70))
+        screen.blit(text_floor1, (30, 100))
+        screen.blit(text_floor2, (30, 130))
+        screen.blit(text_tree, (30, 160))
 
         mode_text = self.font.render(f"Mode: {self.mode.upper()}", True, (255, 255, 255))
-        screen.blit(mode_text, (10, 70))
+        screen.blit(mode_text, (30, 190))
