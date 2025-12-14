@@ -217,7 +217,7 @@ while run:
         if time_since_start < black_duration:
             intro_screen.set_alpha(255)
             screen.blit(intro_screen, (0, 0))
-
+            # de dat play la helicopter
             if not helicopter_sound:
                 helicopter.set_volume(0.65)
                 helicopter.play()
