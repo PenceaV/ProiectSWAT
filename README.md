@@ -12,7 +12,7 @@ The objective of the simulation is to neutralize hostile targets within a design
 
 * **Dynamic Lighting Engine:** utilizes the `shapely` library to calculate polygon intersections and differences, rendering shadows that conform to map geometry (walls, obstacles) relative to the player's position.
 * **Integrated Level Editor:** A built-in tool allowing for real-time map creation, modification, and persistence. Level data (walls, enemies, textures) is serialized and stored in JSON format.
-* **Game Loop & State Management:** Handles distinct states including the intro sequence (blackout/fade-in), active gameplay, menu interfaces, and win/loss conditions.
+* **Game Loop & State Management:** Handles distinct states including the intro sequence, active gameplay, menu interfaces, and win/loss conditions.
 * **Entity Interaction:** Includes collision detection, projectile ballistics, and basic enemy AI that tracks player position based on visibility and proximity.
 
 ## Technology Stack
