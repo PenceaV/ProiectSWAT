@@ -4,23 +4,16 @@ import random
 from shapely import geometry
 from game.bullet import Bullet
 
-import pygame as pg
-import math
-import random
-from shapely import geometry
-from game.bullet import Bullet
-
+pg.mixer.init()
+shoot = pg.mixer.Sound("resources/sound/gun_shot.mp3")
 
 class Enemy(pg.sprite.Sprite):
     def __init__(self, x, y, player):
         super().__init__()
-        # 1. Incarcam imaginea si o salvam ca ORIGINAL_IMAGE
         raw_image = pg.image.load("resources/sprites/taliban.png").convert_alpha()
         self.original_image = pg.transform.scale(raw_image, (80, 80))
 
-        # self.image este ceea ce desenam pe ecran (cea rotita)
         self.image = self.original_image.copy()
-
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
 
@@ -30,7 +23,9 @@ class Enemy(pg.sprite.Sprite):
         self.health = 2
 
         self.shoot_cooldown = 0
-        self.shoot_delay = 80
+        self.shoot_delay = 60
+        self.reaction_time = 40  
+        self.current_reaction = self.reaction_time
 
         self.in_light = False
         self.activation_distance = 450
@@ -38,28 +33,15 @@ class Enemy(pg.sprite.Sprite):
         self.image.set_alpha(0)
 
     def rotate(self):
-        # Calculam diferentele de coordonate
         dx = self.player.rect.centerx - self.rect.centerx
         dy = self.player.rect.centery - self.rect.centery
-
-        # Calculam unghiul in grade
-        # -dy este necesar pentru ca axa Y e inversata in Pygame
-        # -90 este necesar daca sprite-ul tau original sta cu fata in SUS.
-        # Daca sta cu fata la DREAPTA, sterge "- 90".
         angle = math.degrees(math.atan2(-dy, dx)) - 90
 
-        # Rotim imaginea originala
         self.image = pg.transform.rotate(self.original_image, angle)
-
-        # IMPORTANT: Recalculam rect-ul ca sa ramana centrat
         self.rect = self.image.get_rect(center=self.rect.center)
 
     def update(self, walls, shadows, camera_offset):
-        # 1. Rotim inamicul mereu spre jucator (chiar si in intuneric)
-        # sau poti pune asta in if-ul de mai jos daca vrei sa se roteasca doar cand te vede
         self.rotate()
-
-        # 2. Logica de distanta si umbre
         dist_to_player = self.pos.distance_to(self.player.rect.center)
 
         screen_x = self.rect.centerx - camera_offset[0]
@@ -74,13 +56,11 @@ class Enemy(pg.sprite.Sprite):
 
         self.in_light = not is_hidden
 
-        # 3. Aplicam transparenta DUPA rotire (pentru ca rotate creaza o suprafata noua)
         if self.in_light:
             self.image.set_alpha(255)
         else:
             self.image.set_alpha(0)
 
-        # 4. Miscare
         if self.in_light or dist_to_player < self.activation_distance:
             self.move_towards_player(walls)
             if self.shoot_cooldown > 0:
@@ -103,7 +83,17 @@ class Enemy(pg.sprite.Sprite):
                 self.rect.center = round(self.pos.x), round(self.pos.y)
                 break
 
-    def shoot_at_player(self, player_health):
+    def check_line_of_sight(self, walls):
+        line_start = self.rect.center
+        line_end = self.player.rect.center
+        
+        for wall in walls:
+            # Clipline da check daca linia trece prin rect
+            if wall.clipline(line_start, line_end):
+                return False # Vederea e blocata de un perete
+        return True
+
+    def shoot_at_player(self, player_health, walls):
         if not self.in_light:
             return None
 
@@ -116,6 +106,17 @@ class Enemy(pg.sprite.Sprite):
         dist = self.pos.distance_to(self.player.rect.center)
         if dist > 400:
             return None
+        
+        can_see = self.check_line_of_sight(walls)
+        
+        if not can_see:
+            # Daca s a ascuns, resetam
+            self.current_reaction = self.reaction_time
+            return None
+        
+        if self.current_reaction > 0:
+            self.current_reaction -= 1
+            return None
 
         self.shoot_cooldown = self.shoot_delay
 
@@ -125,6 +126,7 @@ class Enemy(pg.sprite.Sprite):
 
         spread = random.uniform(-10, 10)
         final_angle = angle_to_player + spread
+        shoot.play()
 
         return Bullet(self.rect.centerx, self.rect.centery, final_angle)
 

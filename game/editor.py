@@ -33,6 +33,7 @@ class Editor:
         self.walls = {}
         self.grass = {}
         self.floors = {}
+        self.bombs = {}
         self.trees = {}
         self.scroll = [0, 0]
         self.camera_speed = 10
@@ -43,8 +44,6 @@ class Editor:
         
         # De inlocuit cu sprite ul
         enemy_surf = pg.image.load("resources/sprites/taliban.png").convert_alpha()
-        enemy_surf.fill((255, 0, 0))
-        enemy_surf.set_alpha(150)
 
         floors_img = {
             "floor1": pg.image.load("resources/tiles/floors/floor1.png").convert_alpha(),
@@ -72,15 +71,17 @@ class Editor:
             "grass": grass_sprite.convert_alpha(),
             "floor1": pg.transform.scale(floors_img["floor1"], (40, 40)),
             "floor2": pg.transform.scale(floors_img["floor2"], (40, 40)),
-            "tree": pg.image.load("resources/tiles/tree.png").convert_alpha()
+            "tree": pg.image.load("resources/tiles/tree.png").convert_alpha(),
+            "bomb": pg.transform.scale(pg.image.load("resources/sprites/bomb.png").convert_alpha(), (self.cell_size, self.cell_size))
         }
 
     def update(self, screen):
         self.move_camera()
         self.make_grid(screen)
         self.edit()
-        self.draw_floors(screen, self.scroll)
-        self.draw_walls(screen, self.scroll)
+        #self.draw_floors(screen, self.scroll)
+        #self.draw_walls(screen, self.scroll)
+        #self.draw_bombs(screen, self.scroll)
         self.draw_enemies(screen, self.scroll)
         self.draw_ui(screen)
 
@@ -222,6 +223,15 @@ class Editor:
                 if pos_key in self.enemies:
                     self.enemies.remove(pos_key)
 
+        elif self.mode == "bomb":
+            if has_click[0]:
+                if pos_key not in self.bombs and pos_key not in self.walls and pos_key not in self.enemies:
+                    self.bombs[pos_key] = "bomb"
+
+            elif has_click[2]:
+                if pos_key in self.bombs:
+                    del self.bombs[pos_key]
+
     def draw_floors(self, screen, offset=(0, 0)):
         for pos, asset in self.grass.items():
             screen_pos_x = pos[0] - offset[0]
@@ -241,14 +251,18 @@ class Editor:
             if -self.cell_size < screen_pos_x < screen.get_width() and -self.cell_size < screen_pos_y < screen.get_height():
                 screen.blit(asset, (screen_pos_x, screen_pos_y))
 
+        for pos in self.bombs:
+            screen_pos_x = pos[0] - offset[0]
+            screen_pos_y = pos[1] - offset[1]
+            if -self.cell_size < screen_pos_x < screen.get_width() and -self.cell_size < screen_pos_y < screen.get_height():
+                screen.blit(self.assets["bomb"], (screen_pos_x, screen_pos_y)) 
+
     def draw_walls(self, screen, offset=(0, 0)):
         for pos, asset in self.walls.items():
             screen_pos_x = pos[0] - offset[0]
             screen_pos_y = pos[1] - offset[1]
             if -self.cell_size < screen_pos_x < screen.get_width() and -self.cell_size < screen_pos_y < screen.get_height():
                 screen.blit(asset, (screen_pos_x, screen_pos_y))
-
-
 
     def draw_enemies(self, screen, offset=(0, 0)):
         for pos in self.enemies:
@@ -295,7 +309,8 @@ class Editor:
             "floors": floors,
             "walls": list(self.walls.keys()),
             "enemies": list(self.enemies),
-            "trees": list(self.trees)
+            "trees": list(self.trees),
+            "bomb": list(self.bombs)
         }
 
         with open(self.save_path, "w") as f:
@@ -314,12 +329,14 @@ class Editor:
         self.floors = {}
         self.walls = {}
         self.enemies = set()
+        self.bombs = {}
 
         grass_list = data.get("grass", [])
         walls_list = data.get("walls", [])
         enemies_list = data.get("enemies", [])
         trees_list = data.get("trees", [])
         floors_list = data.get("floors", [])
+        bombs_list = data.get("bomb", [])
 
         for pos in walls_list:
             self.walls[tuple(pos)] = self.assets["center"]
@@ -347,6 +364,9 @@ class Editor:
         for pos in enemies_list:
             self.enemies.add(tuple(pos))
 
+        for pos in bombs_list:
+            self.bombs[tuple(pos)] = "bomb"
+
         for pos in list(self.walls.keys()):
             self.update_wall(pos)
 
@@ -360,6 +380,7 @@ class Editor:
         text_floor1 = self.font.render("4 - Floor1", True, (255, 255, 0))
         text_floor2 = self.font.render("5 - Floor2", True, (255, 255, 0))
         text_tree = self.font.render("6 - Tree", True, (255, 255, 0))
+        text_bomb = self.font.render("7 - Bomb", True, (255, 255, 0))
         
         screen.blit(text_wall, (30, 10))
         screen.blit(text_enemy, (30, 40))
@@ -367,6 +388,7 @@ class Editor:
         screen.blit(text_floor1, (30, 100))
         screen.blit(text_floor2, (30, 130))
         screen.blit(text_tree, (30, 160))
+        screen.blit(text_bomb, (30, 190))
 
         mode_text = self.font.render(f"Mode: {self.mode.upper()}", True, (255, 255, 255))
-        screen.blit(mode_text, (30, 190))
+        screen.blit(mode_text, (30, 220))

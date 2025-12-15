@@ -8,8 +8,8 @@ class UI:
         self.spacing = 10 
         self.heart_img = pg.image.load("resources/sprites/heart.png").convert_alpha()
         self.heart_img = pg.transform.scale(self.heart_img, (30, 30))
-        self.ammo_color = (255, 255, 255)  # Alb
-        self.reload_color = (255, 0, 0)  # Rosu (cand incarca)
+        self.ammo_color = (255, 255, 255) 
+        self.reload_color = (255, 0, 0)  
 
     def draw(self, screen):
         start_x = 1280 - 40

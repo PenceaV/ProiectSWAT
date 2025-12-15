@@ -47,7 +47,7 @@ class Player(pg.sprite.Sprite):
 
         self.is_reloading = False
         self.reload_timer = 0
-        self.reload_duration = 60  #60 frame-uri = 1 secunda la 60FPS
+        self.reload_duration = 60 
 
     def update(self, walls, trees):
         """Ii da update caracterului cu toate functionalitatile"""
@@ -147,11 +147,9 @@ class Player(pg.sprite.Sprite):
         if self.cooldown == 0:
             self.cooldown = 20
 
-            # Scadem un glont
-
             self.current_mag_ammo -= 1
             shoot.play()
-
+            
             offset = pg.math.Vector2(20, -5)
             rotated_offset = offset.rotate(-self.angle)
             bullet_start_pos = self.rect.center + rotated_offset

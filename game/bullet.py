@@ -23,9 +23,8 @@ class Bullet(pg.sprite.Sprite):
         self.rect.x = int(self.x)
         self.rect.y = int(self.y)
         for wall in walls:
-            if self.rect.colliderect(wall): # trece prin 2 colturi de wall (?)
+            if self.rect.colliderect(wall):
                 self.kill()
 
     def update(self, walls):
         self.movement(walls)
-        # trb adaugata iarba ca border sa nu poata iesi din scena si sa se distruga bulleturile in ea
