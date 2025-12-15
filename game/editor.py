@@ -27,6 +27,8 @@ grass_img = "resources/tiles/grass.png"
 grass_sprite = pg.image.load(grass_img)
 grass_sprite = pg.transform.scale(grass_sprite, (40, 40))
 
+
+
 class Editor:
     def __init__(self):
         self.cell_size = 40
@@ -44,6 +46,7 @@ class Editor:
         
         # De inlocuit cu sprite ul
         enemy_surf = pg.image.load("resources/sprites/taliban.png").convert_alpha()
+        tree_img = pg.image.load("resources/tiles/tree.png").convert_alpha()
 
         floors_img = {
             "floor1": pg.image.load("resources/tiles/floors/floor1.png").convert_alpha(),
@@ -71,7 +74,7 @@ class Editor:
             "grass": grass_sprite.convert_alpha(),
             "floor1": pg.transform.scale(floors_img["floor1"], (40, 40)),
             "floor2": pg.transform.scale(floors_img["floor2"], (40, 40)),
-            "tree": pg.image.load("resources/tiles/tree.png").convert_alpha(),
+            "tree": pg.transform.scale(tree_img, (100, 100)),
             "bomb": pg.transform.scale(pg.image.load("resources/sprites/bomb.png").convert_alpha(), (self.cell_size, self.cell_size))
         }
 

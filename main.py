@@ -284,6 +284,7 @@ while run:
                     if player.health <= 0:
                         death.play()
                         game_over = True
+                        victory = False
                         timer.stop()
 
                 pg.sprite.groupcollide(bullets, enemy_group, True, True)

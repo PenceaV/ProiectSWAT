@@ -12,14 +12,13 @@ class ShadowCaster:
 
         self.colors = {
             'text': (38, 70, 83),
-            'shadows': (20, 20, 20),  # Daca vrei negru transparent: (0, 0, 0)
+            'shadows': (20, 20, 20),
             'green': (42, 157, 143),
             'red': (229, 107, 111)
         }
 
         self.render_width, self.render_height = 1920, 1080
         self.render_dimensions = (self.render_width, self.render_height)
-        # Folosim SRCALPHA pentru transparenta reala daca doresti
         self.shadow_render_surface = pygame.Surface(self.render_dimensions, pygame.SRCALPHA)
         self.debug_render_surface = pygame.Surface(self.render_dimensions, pygame.SRCALPHA)
 
@@ -117,13 +116,11 @@ class ShadowCaster:
 
             self.obstacle_shadows.append(Shadow(shadow_polygon, shadow_corners))
 
-        # --- AICI INCEPE MODIFICAREA PRINCIPALA PENTRU EROARE ---
         if not self.obstacle_shadows:
             return
 
         render_shapes = ops.unary_union([s.polygon for s in self.obstacle_shadows])
 
-        # 1. Cazul GeometryCollection (FIX PENTRU CRASH)
         if isinstance(render_shapes, geometry.GeometryCollection):
             for geom in render_shapes.geoms:
                 if isinstance(geom, geometry.Polygon):
@@ -134,26 +131,22 @@ class ShadowCaster:
                         corners = list(poly.exterior.coords)
                         self.shaded_areas.append(Shadow(poly, corners))
 
-        # 2. Cazul MultiPolygon (Codul tau original)
         elif isinstance(render_shapes, geometry.MultiPolygon):
             if len(render_shapes.geoms) < len(self.obstacle_shadows):
                 for polygon in render_shapes.geoms:
                     corners = list(polygon.exterior.coords)
                     self.shaded_areas.append(Shadow(polygon, corners))
             else:
-                # Logica ta originala de difference
                 for obstacle, shadow in zip(self.visible_obstacles, self.obstacle_shadows):
-                    # Trebuie sa verificam daca shadow.polygon e valid inainte de diferenta
                     try:
                         shadow.polygon = shadow.polygon.difference(obstacle[0].polygon)
-                        # Dupa diferenta poate rezulta un MultiPolygon, tratam simplificat:
+
                         if isinstance(shadow.polygon, geometry.Polygon):
                             shadow.corners = list(shadow.polygon.exterior.coords)
                     except:
-                        pass  # Ignoram erorile de geometrie complexe momentan
+                        pass
                 self.shaded_areas = self.obstacle_shadows
 
-        # 3. Cazul Polygon Simplu (Codul tau original cu fix-ul de gauri)
         elif isinstance(render_shapes, geometry.Polygon):
             if len(list(render_shapes.interiors)) == 0:
                 corners = list(render_shapes.exterior.coords)
@@ -167,7 +160,6 @@ class ShadowCaster:
                 check = False
                 connection_index = 0
                 for i, point in enumerate(corners):
-                    # Verificare tip pentru siguranta
                     intersection = interior_polygon.intersection(geometry.LineString([interior_coords[0], point]))
                     if isinstance(intersection, geometry.Point):
                         check = True
@@ -175,9 +167,7 @@ class ShadowCaster:
                         corners.pop(-1)
                         break
 
-                # Daca nu gaseste solutie, folosim fallback simplu
                 if not check:
-                    # print('Keine Lösung gefunden...') # Comentat sa nu faca spam
                     pass
                 else:
                     corners = corners[connection_index:] + corners[:connection_index]
@@ -186,17 +176,13 @@ class ShadowCaster:
 
                 self.shaded_areas.append(Shadow(geometry.Polygon(corners), corners))
             else:
-                # Fallback pentru cazuri complexe cu multe gauri: desenam doar exteriorul
                 corners = list(render_shapes.exterior.coords)
                 self.shaded_areas.append(Shadow(render_shapes, corners))
-                # print('Shadow has more than two holes - drawing exterior only')
 
     def render_shadows(self):
-        # Umplem cu transparent (0,0,0,0) ca sa putem desena peste joc
         self.shadow_render_surface.fill((0, 0, 0, 0))
 
         for shadow in self.shaded_areas:
-            # Desenam cu culoarea definita in init (negru/albastru inchis)
             pygame.draw.polygon(self.shadow_render_surface, self.colors['shadows'], shadow.corners)
 
         return self.shadow_render_surface
@@ -210,7 +196,6 @@ class ShadowCaster:
         for obstacle, number in self.visible_obstacles:
             self.debug_render_surface.blit(self.font.render(str(number), False, self.colors['text']),
                                            (obstacle.center[0], obstacle.center[1] - 15))
-            # Convertim Point la string sau ne asiguram ca e text valid
             self.debug_render_surface.blit(self.font.render(str(obstacle.distance), False, self.colors['text']),
                                            obstacle.center)
 
